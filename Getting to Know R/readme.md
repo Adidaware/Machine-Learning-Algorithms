@@ -1,6 +1,6 @@
 # Flight Delay Analysis
 
-An exploratory data analysis of airline flight data to determine departure delays and identify night-time flight patterns. This project was developed as part of the DA5030 course.
+An exploratory data analysis of airline flight data to determine departure delays and identify night-time flight patterns.
 
 ## 📊 Overview
 This project processes a dataset of flight schedules to calculate:
