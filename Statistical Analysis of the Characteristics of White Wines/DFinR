@@ -1,0 +1,34 @@
+---
+title: "Working with Data Frame"
+subtitle: "Statistical Analysis of the Characteristics of White Wines"
+author: Daware, Aditya
+date: January 14, 2025
+---
+
+```{r Q2_loadCSV, echo = F}
+url<- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/whitewines.csv"
+df.w. <- read.csv(url, stringsAsFactors = FALSE)
+
+n.rows<-nrow(df.w.)
+
+alc.content <- sum(df.w.$alcohol > 12)
+
+highest.alc<-max(df.w.$alcohol)
+
+qual<- sum(df.w.$alcohol > 12 & df.w.$quality < 6)
+
+df.w.$swill <- (df.w.$alcohol / df.w.$quality) * df.w.$residual.sugar
+top_wines <- df.w.[order(-df.w.$swill), ][1:5,c("residual.sugar", "alcohol", "quality", "swill") ]
+
+```
+## Analysis of Wines
+
+The data analyzed consists of various attributes of `r n.rows` wines. There are `r alc.content` wines with an alcohol content above 12%. The highest alcohol content of any wine is `r highest.alc`. `r qual` wines have an alcohol content above 12% and a quality rating below 6.
+
+We define "swill index" as the ratio of alcohol divided by quality and multiplied by the residual sugar content. The five wines with the largest swill index are listed below:
+
+```{r, echo=F}
+library(knitr)
+kable(top_wines, caption = "Top 5 Wines with the Largest Swill Index")
+```
+
