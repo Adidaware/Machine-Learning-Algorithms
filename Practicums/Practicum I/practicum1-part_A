@@ -1,0 +1,312 @@
+---
+title: "Practicum I / Part A"
+author: "Daware, Aditya"
+date: "Spring 2025"
+output: pdf_document
+subtitle: kNN Classification
+---
+
+## Loading the CSV file
+```{r readCSV}
+url <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/parkinsons-diagnostic-data.csv"
+df <- read.csv(url, stringsAsFactors = F)
+knitr::kable(head(df, 5))
+```
+Loaded the data from the csv file link
+
+## Processing the data
+### Cleaning the data
+```{r processing_data}
+df <- df[, -which(names(df) == "Ethnicity")]
+df <- df[, -which(names(df) == "EducationLevel")]
+df <- df[, -which(names(df) == "Gender")]
+df <- df[, -which(names(df) == "PatientID")]
+df <- df[, -which(names(df) == "Smoking")]
+```
+Removed the 'Ethnicity', 'Education Level', 'Gender', 'PatientID' and 'Smoking' columns have been removed. The 'Ethnicty' column did not contain any data and does not affect the result. The 'Education Level' did not affect the results or the model prediction. The data is sourced from female patients only and does not affect the results. PatientID is not needed right now for the analysis and the Smoking does not cause or relate to parkinson's.
+
+### Checking for missing data
+```{r Checking_for_missing_data}
+column.names <- colnames(df)
+any(is.na(df[, column.names]))
+```
+We check if there are any missing values in the features of the datasets. Missing values are found.
+
+### Handling Missing Data
+```{r Finding the missing data}
+missing.value <- which(is.na(df), arr.ind = TRUE)
+missing.value
+```
+We pinpoint the missing values and extract the column number. 
+
+### Checking for distribution of data
+```{r Distribution of Data}
+z <-missing.value[1,2]
+qqnorm(df[,z])
+qqline(df[,z])
+grid()
+
+```
+
+
+### Imputting Missing values and checking for missing values
+```{r Imputing missing values}
+meanvalue <-mean(df[,z], na.rm = T)
+medianvalue <- median(df[,z], na.rm = T)
+df[,z][is.na(df[,z])] <- meanvalue
+any(is.na(df[, column.names]))
+
+```
+### Why did I choose the mean value?
+
+Based on the distribution of data and as seen on the QQ plot also that the data is normally distributed and centers towards the value of ~7. The mean value of the column `r colnames(df[z])` is `r meanvalue` which is similar to the median value of `r medianvalue`. The missing values are replaced with the mean value of the column
+After imputing the missing values, we check again to see any missing values and none are found.
+
+
+## Correlation between the variable
+```{r Checking for Correlation}
+cor_matrix <- cor(df, use = "complete.obs", method = "pearson")
+```
+The column variables that have little to no correlation are removed. In our case, no columns are removed.
+
+
+## Checking for outliers
+```{r Checking Outliers}
+z.value<- function(column){
+  return(abs((column - mean(column)) / sd(column)))
+}
+numeric.columns <- sapply(df, is.numeric)
+
+binary.columns <- sapply(df, function(col) all(unique(na.omit(col)) %in% c(0, 1)))
+
+df.numeric <- df[, numeric.columns & !binary.columns]
+
+outlier_results <- list()
+
+for (c in colnames(df.numeric)) {
+  r <- z.value(df.numeric[[c]])
+  out <- any(r >= 3, na.rm = TRUE)
+
+  outlier_results[[c]] <- list( r, out)
+}
+
+names(outlier_results)[sapply(outlier_results, function(x) x[[2]])]
+```
+We check if there are outliers and in which column. In our case, the outliers are found in the column with values of Cholesterol Triglycerides. 
+
+### Pinpointing the outliers
+```{r Pinpointing outliers}
+z.value <- abs((df$CholesterolTriglycerides - mean(df$CholesterolTriglycerides)) / sd(df$CholesterolTriglycerides))
+which(z.value >= 3)
+```
+In this step we locate the exact location of the outliers.
+
+### Imputing Outliers
+```{r Imputing outliers}
+median_value <- median(df$CholesterolTriglycerides[z.value < 3], na.rm = TRUE)
+df$CholesterolTriglycerides[z.value >= 3] <- median_value
+
+z.value <- abs((df$CholesterolTriglycerides - mean(df$CholesterolTriglycerides)) / sd(df$CholesterolTriglycerides))
+any(z.value >= 3)
+```
+In this case, I decided to treat outliers as missing values and then impute them with the median values and then checked again if there are outliers and new outliers were found. We repeat the steps on 'Checking for outliers' followed by 'Pinpointing the outliers' and 'Handle outliers' until no outliers are found.
+
+## Repeating the Process
+```{r Checking Outliers again}
+z.value<- function(column){
+  return(abs((column - mean(column)) / sd(column)))
+}
+numeric.columns <- sapply(df, is.numeric)
+
+binary.columns <- sapply(df, function(col) all(unique(na.omit(col)) %in% c(0, 1)))
+
+df.numeric <- df[, numeric.columns & !binary.columns]
+
+outlier_results <- list()
+
+for (c in colnames(df.numeric)) {
+  r <- z.value(df.numeric[[c]])
+  out <- any(r >= 3, na.rm = TRUE)
+
+  outlier_results[[c]] <- list( r, out)
+}
+
+names(outlier_results)[sapply(outlier_results, function(x) x[[2]])]
+```
+### Pinpointing the outliers
+```{r Pinpointing outliers again}
+z.value <- abs((df$CholesterolTriglycerides - mean(df$CholesterolTriglycerides)) / sd(df$CholesterolTriglycerides))
+which(z.value >= 3)
+```
+### Imputing Outliers
+```{r Imputing outliers again}
+median_value <- median(df$CholesterolTriglycerides[z.value < 3], na.rm = TRUE)
+df$CholesterolTriglycerides[z.value >= 3] <- median_value
+
+z.value <- abs((df$CholesterolTriglycerides - mean(df$CholesterolTriglycerides)) / sd(df$CholesterolTriglycerides))
+any(z.value >= 3)
+```
+We have removed all the outliers.
+
+
+## Normalization of the features
+```{r Standardization}
+normalize <- function(x) {
+return ((x - min(x)) / (max(x) - min(x))) }
+
+is.binary<- function(column){
+  value<- column
+  length(value)==2 & all(value %in% c(0, 1))
+}
+categorical_cols <- sapply(df, is.binary)
+df[!categorical_cols] <- as.data.frame(lapply(df[!categorical_cols], normalize))
+
+```
+We scale the numerical variables using min-max normalization.
+
+## Spliting the Data
+```{r Spliting_the_data}
+library(ggplot2)
+library(lattice)
+library(caret)
+
+train_indices <- createDataPartition(y = df$Diagnosis, p = 0.9, list = FALSE)
+
+df.train <- df[train_indices, ]
+df.test <- df[-train_indices, ]
+```
+The data set is split into training and test data to train the KNN Model.
+
+### Checking the percentage distribution
+```{r percentage distribution}
+prop.table(table(df.train$Diagnosis)) * 100
+prop.table(table(df.test$Diagnosis)) * 100
+```
+This function computes and returns the percentage distribution of patients who need no diagnosis and patients who needs diagnosis. This value will change every time the markdown file is knitted as spliting the data sets into train and test is data is occurring at random.
+
+## KNN Model
+```{r knn_model}
+library(class)
+
+x.train <- df.train[, !names(df.train) %in% "Diagnosis"]
+x.test <- df.test[, !names(df.test) %in% "Diagnosis"]
+
+y.train <- as.factor(df.train$Diagnosis)
+y.test <- as.factor(df.test$Diagnosis)
+
+model <- knn(train = x.train, test = x.test, cl = y.train, k = 45)
+```
+The KNN Model is made using the train and test data. The 'k' value is the square root of the numbers of samples is 45.
+
+### Confusion Matrix
+```{r Confusion Matrix}
+library(gmodels)
+result<-CrossTable(x = y.test, y = model, prop.chisq = FALSE, prop.t = FALSE, prop.r = FALSE)
+
+# str(result)
+# result$t
+cross.df <- as.data.frame.matrix(result$t)
+cross.df
+```
+We create the confusion matrix to calculate the accuracy, precision and recall in the next step.
+
+### Calculation of Precision and Recall
+```{r}
+true.negatives <- cross.df[1,1]
+true.positives <- cross.df[2,2]
+false.negatives <- cross.df[2,1] # Dangerous
+false.positives <- cross.df[1,2] # Less Dangerous
+
+accuracy <- (true.positives + true.negatives)/( true.positives + true.negatives + false.positives + false.negatives)
+precision <- true.positives/(true.positives + false.positives)
+recall = true.positives / (true.positives + false.negatives)
+```
+To evaluate machine learning algorithms, we can use various metrics based on the concept of true positives. 
+
+Accuracy: Accuracy measures the overall correctness of the model’s predictions. It is calculated as the ratio of the number of correct predictions (true positives and true negatives) to the total number of predictions.
+The accuracy of this model is `r accuracy`.
+
+Precision: Precision assesses the model’s ability to correctly identify positive predictions among all the positive predictions it made. It is computed as the ratio of true positives to the sum of true positives and false positives.
+The precision of this model is `r precision`.
+
+Recall or Sensitivity: Recall measures the model’s ability to correctly identify positive instances from all the actual positive instances. It is calculated as the ratio of true positives to the sum of true positives and false negatives.
+The recall of this model is `r recall`.
+
+```{r F1_Score}
+f1.score<-function(p,r){
+  score <- (2 * ((p*r)/(p+r)))
+  return(score)
+}
+
+f1.score(precision,recall)
+```
+The f1 score obtained for this model is `r f1.score(precision,recall)`. The f1 score is fluctuation as the data spliting for the KNN model training is occurring at random, the range of F1 score is 0.75 to 0.9.
+
+
+# Part B - Validating the model
+## Loading the CSV file 
+```{r LoadCSVfile}
+
+url.v <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/parkinsons-diagnostic-validation-100.csv"
+df.val <- read.csv(url.v, stringsAsFactors = F)
+```
+Reading the validation data set and storing it as 'df.val'
+
+## Preprocessing the new data
+```{r PrepocessingData}
+df.val.og <- df.val
+df.val <- df.val[, -which(names(df.val) == "Ethnicity")]
+df.val <- df.val[, -which(names(df.val) == "EducationLevel")]
+df.val <- df.val[, -which(names(df.val) == "Gender")]
+df.val <- df.val[, -which(names(df.val) == "PatientID")]
+df.val <- df.val[, -which(names(df.val) == "Smoking")]
+```
+Removed the columns in the validation dataset as they were also removed in the training data set. 
+
+## Checking for missing data in the validation dataset
+```{r Missing_information_validation_data}
+column.names <- colnames(df.val)
+any(is.na(df.val[, column.names]))
+```
+The validation data set does not contain any missing values and thus eliminates the need to handle missing values.
+
+## Checking for correlation between the features
+```{r Correlation}
+cor_matrix <- cor(df.val, use = "complete.obs", method = "pearson")
+```
+Checking for the correlation between the features. 
+
+
+## Normalization of variable features
+```{r Normalization}
+categorical_cols <- sapply(df.val, is.binary)
+df.val[!categorical_cols] <- as.data.frame(lapply(df.val[!categorical_cols], normalize))
+```
+The features have to be scaled. I have used Min-Max Normalization for the scaling of data.
+
+
+```{r KNN Model }
+library(class)
+
+x.train.val <- df[, !names(df) %in% "Diagnosis"]
+x.test.val <- df.val[]  
+
+y.train.val <- as.factor(df$Diagnosis)  
+
+k <- 45  
+
+model.val <- knn(train = x.train.val, test = x.test.val, cl = y.train.val, k = k)
+```
+The KNN model trained in Part A is used to predict the diagnosis for patients in validation data set.
+
+```{r CSV File }
+output.df <- data.frame(PatientID = df.val.og[,1], Diagnosis = model.val)
+output.df <- output.df[order(output.df$PatientID), ]
+
+write.csv(output.df, "DawareA.Predictions.csv") 
+```
+The CSV file is created with 2 columns, where the first column states Patient ID and the second column stated whether diagnosis is needed or not. '1' indicates diagnosis needed and '0' indicates diagnosis not needed.
+
+
+
+
