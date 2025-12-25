@@ -1,0 +1,93 @@
+---
+title: "kNN"
+author: "Daware, Aditya"
+date: "February 4, 2025"
+---
+
+## Load CSV
+```{r LoadCSV}
+url <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/DiabetesDatasetWithMissingValues.csv"
+df <- read.csv(url, stringsAsFactors=F)
+knitr::kable(head(df, 5))
+```
+
+## Calculate BMI
+```{r}
+# which(is.na(df$bmi))
+
+male.bmi <- df$bmi[df$gender=="Male"]
+female.bmi <- df$bmi[df$gender=="Female"]
+
+trim.mean.m <- mean(male.bmi, trim = 0.1, na.rm=T)
+trim.mean.f <- mean(female.bmi, trim = 0.1, na.rm=T)
+
+df$bmi[is.na(df$bmi) & df$gender == "Male"] <- trim.mean.m
+df$bmi[is.na(df$bmi) & df$gender == "Female"] <- trim.mean.f
+
+trim.mean.m
+trim.mean.f
+```
+
+## Feature Encoding
+```{r Encode}
+
+df$gender_Male <- ifelse(df$gender == "Male", 1, 0)
+df$gender_Female <- ifelse(df$gender == "Female", 1, 0)
+
+freq.encoding <- table(df$smoking_history)
+df$smoking_history_freq <- freq.encoding[df$smoking_history]
+
+df.encoded <- df[, !names(df) %in% c("gender", "smoking_history")]
+```
+
+## Feature Normalization
+```{r Normalize}
+library(dplyr)
+
+df.norm <- df.encoded %>%
+  mutate_if(~ is.numeric(.) & !all(. %in% c(0,1)), scale)
+
+# df.norm
+```
+
+## Spliting the dataset in train and test dataset
+```{r Split}
+library(caret)
+library(ggplot2)
+library(lattice)
+
+train_indices <- createDataPartition(y = df.norm$diabetes, p = 0.8, list = FALSE)
+
+df.train <- df.norm[train_indices, ]
+df.val <- df.norm[-train_indices, ]
+```
+
+## Check for split proportionality
+```{r CheckforImbalance}
+prop.table(table(df.train$diabetes)) * 100
+prop.table(table(df.val$diabetes)) * 100
+```
+The target variable values are present in the same proportion in both the subset like the original dataset.
+
+## Implementing kNN model
+```{r Q8_KNN}
+library(class)
+
+x.train <- df.train[, !names(df.train) %in% "diabetes"]
+x.val <- df.val[, !names(df.val) %in% "diabetes"]
+
+y.train <- as.factor(df.train$diabetes)
+y.val <- as.factor(df.val$diabetes)
+
+model <- knn(train = x.train, test = x.val, cl = y.train, k = 5)
+```
+
+## Generating cross table
+```{r Q9_CrossTable}
+library(gmodels)
+result<-CrossTable(x = y.val, y = model, prop.chisq = FALSE, prop.t = FALSE, prop.r = FALSE)
+
+```
+
+## Summary
+The kNN algorithm exhibits an overall accuracy of of `r round(sum(diag(result$t)) / sum(result$t) * 100,)`% with a true positive rate of `r round(result$prop.row[2,2] * 100,)`% and a true negative rate of `r round(result$prop.row[1,1] * 100,)`%.
