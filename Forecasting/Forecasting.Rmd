@@ -1,0 +1,102 @@
+---
+title: "Forecasting"
+author: "Daware, Aditya"
+date: "January 28, 2025"
+---
+
+```{r loadCSV}
+url <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/financial_portfolio_data.csv"
+df <- read.csv(url, stringsAsFactors = F)
+df
+```
+
+```{r ConvertDate}
+df$Date <- as.Date(df$Date)
+df
+```
+
+```{r Extraction}
+df.B <- df[which(df$Asset == "Bond B"), ]
+df.B <- df.B[order(df.B$Date), ]
+df.B
+```
+
+```{r Add_month}
+df.B$Month <- format(df.B$Date, "%m")
+```
+
+```{r meanprice}
+library(RSQLite)
+library(proto)
+library(gsubfn)
+library(sqldf)
+
+df.Monthly <- sqldf("SELECT Month, avg(Price) AS `AvgPrice` FROM `df.B` GROUP BY Month ORDER BY Month")
+df.Monthly
+```
+
+```{r plot}
+plot(df.Monthly$Month, df.Monthly$AvgPrice,
+     type = "b",
+     xlab="Months",
+     ylab="Average Price",
+     col="Red")
+```
+
+```{r WMA}
+library(TTR)
+weights<-c(0.1, 0.2, 0.2, 0.5)
+wma <- TTR::WMA(df.Monthly$AvgPrice, n = length(weights), wts = weights)
+forecast.val <- tail(wma, 1)
+forecast.val
+```
+
+```{r Backtesting_MAE}
+
+for (t in 3:nrow(df.Monthly)) {
+  df.Monthly$abs.err[t] <- abs(df.Monthly$AvgPrice[t] - wma[t-1])
+}
+
+# calculate mean of absolute errors (MAE)
+MAE.WMA <- mean(df.Monthly$abs.err, na.rm = T)
+MAE.WMA
+```
+
+```{r Seasonality}
+season1 <- mean(df.Monthly$AvgPrice[1:4])
+season2 <- mean(df.Monthly$AvgPrice[5:8])
+season3 <- mean(df.Monthly$AvgPrice[9:12])
+season.avgprice <- c(season1, season2, season3)
+
+overall_avg <- mean(df.Monthly$AvgPrice)
+
+SI_season1 <- season1 / overall_avg
+SI_season2 <- season2 / overall_avg
+SI_season3 <- season3 / overall_avg
+
+avg.SI <- data.frame(
+  Season = c("Season 1", "Season 2", "Season 3"),
+  season.avgprice,
+  SI = c(SI_season1, SI_season2, SI_season3)
+)
+
+avg.SI
+```
+
+```{r Next_month_forecast}
+trend_model <- lm(season.avgprice ~ c(1, 2, 3), data = avg.SI)
+
+b <- trend_model$coefficients[1]
+m <- trend_model$coefficients[2]
+
+n <- nrow(avg.SI)
+fc <- c(1)
+
+fc[1] <- m * (n + 1) + b
+
+adj.forecast <- fc[1] * avg.SI$SI[1]
+
+adj.forecast
+
+```
+
