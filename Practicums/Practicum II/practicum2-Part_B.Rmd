@@ -1,0 +1,182 @@
+---
+title: "Practicum II / Part B"
+author: "Daware, Aditya"
+date: "Spring, 2025"
+subtitle: Multiple Linear Regression
+---
+
+## Reading the CSV file
+```{r read csv}
+url.train <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/synth-data.csv"
+url.valid <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/synth-data-validation-500.csv"
+
+df <- read.csv(url.train, stringsAsFactors = F)
+
+df.valid <- read.csv(url.valid, stringsAsFactors = F)
+```
+
+The CSV file is read and stored in the variables, df and df.valid.
+
+## Exploratory Data Analysis
+```{r EDA}
+head(df)
+head(df.valid)
+
+str(df)
+str(df.valid)
+
+summary(df)
+summary(df.valid)
+```
+
+
+## Missing Values and Outliers
+```{r Missing values and Outliers}
+sum(is.na(df))
+
+boxplot(df$Target)
+
+```
+
+There are no missing values in the dataset. 
+We checked the distribution of the dataset using boxplot and no outliers were found.
+
+## Multicolinearity Check
+```{r Multicolinearity}
+library(car)
+vif(lm(Target ~ ., data = df))
+
+```
+
+Calculated the Variance Inflation Factor to check for multicolinearity in the data. 
+If the value is close to 1 then it indicates low colinearity.VIF values greater than 10 may indicate multicollinearity issues.
+
+### Scaling numeric features
+#### Training Dataset
+```{r Scaling Training}
+numeric_cols <- sapply(df, is.numeric)
+df[numeric_cols] <- scale(df[numeric_cols])
+
+```
+
+Scaling the features in the training dataset
+
+#### Validation Dataset
+```{r Scaling Validation}
+numeric_cols <- sapply(df.valid, is.numeric)
+df.valid[numeric_cols] <- scale(df.valid[numeric_cols])
+
+```
+
+Scaling the features in the validation dataset
+
+### Encoding categorical features
+#### Training Dataset
+```{r Dummy encoding training}
+df <- cbind(df, model.matrix(~B1 - 1, data = df))
+df <- df[, -which(names(df) == "B1")]
+
+df <- cbind(df, model.matrix(~C1 - 1, data = df))
+df <- df[, -which(names(df) == "C1")]
+```
+
+The model.matrix converts the variables into dummy variables and ensures that each level of the factor is represented as a seperate binary column.
+
+#### Validation Dataset
+```{r Dummy coding validation}
+df.valid <- cbind(df.valid, model.matrix(~B1 - 1, data = df.valid))
+df.valid <- df.valid[, -which(names(df.valid) == "B1")]
+
+df.valid <- cbind(df.valid, model.matrix(~C1 - 1, data = df.valid))
+df.valid <- df.valid[, -which(names(df.valid) == "C1")]
+```
+
+The model.matrix converts the variables into dummy variables and ensures that each level of the factor is represented as a seperate binary column.
+
+## Feature selection
+```{r Feature Selection}
+model_full <- lm(Target ~ ., data = df)
+step_model <- step(model_full, direction = "both")
+summary(step_model)
+
+```
+
+This code chunk runs a full linear regression model using all features in the training dataset. Then, stepwise feature selection is performed in both forward and backward directions to identify the most relevant variables for predicting the target. The summary displays the results of the selected model.
+
+## Model Training
+### Model 1
+```{r Model 1}
+model1 <- lm(Target ~ X + N1 + N2 + N3 + N4 + N5 + N6 + B1False + B1True + C1Level1 + C1Level2 + C1Level3 + C1Level4, data = df)
+summary(model1)
+
+```
+
+This code builds the first linear regression model (model1) using a subset of features from the dataset. The summary provides detailed information about the model's coefficients, significance, and performance.
+
+### Model 2
+```{r Model 2}
+model2 <- lm(Target ~ X + N1 + N2 + N3 + N4 + N5 + N6 + B1False + B1True + C1Level1 + C1Level2 + C1Level3, data = df)
+summary(model2)
+```
+
+This code builds the first linear regression model (model2) using a subset of features from the dataset. The summary provides detailed information about the model's coefficients, significance, and performance.
+
+### Model 3
+```{r Model 3}
+model3 <- lm(Target ~ X + N1 + N2 + N3 + N4 + N5 + N6 + B1False + C1Level1 + C1Level2 + C1Level3, data = df)
+summary(model3)
+```
+
+This code builds the first linear regression model (model3) using a subset of features from the dataset. The summary provides detailed information about the model's coefficients, significance, and performance.
+
+## Ensemble approach
+```{r Ensemble Model}
+predictions_model1 <- predict(model1, newdata = df.valid)
+predictions_model2 <- predict(model2, newdata = df.valid)
+predictions_model3 <- predict(model3, newdata = df.valid)
+
+ensemble_predictions <- (predictions_model1 + predictions_model2 + predictions_model3) / 3
+
+# Fit a new model using the ensemble predictions as the target
+ensemble_model <- lm(ensemble_predictions ~ X + N1 + N2 + N3 + N4 + N5 + N6 + B1False + B1True + C1Level1 + C1Level2 + C1Level3 + C1Level4, data = df.valid)
+
+
+```
+
+This section first predicts the target variable using each of the three models. Then, an ensemble prediction is created by averaging the predictions from all three models. A new linear regression model is built using the ensemble predictions as the target variable.
+
+## Model Validation
+### Prediction
+```{r}
+validation_predictions <- predict(ensemble_model, newdata = df.valid)
+
+```
+
+This code chunk generates predictions on the validation dataset using the ensemble model, which is used to assess how well the combined model performs on unseen data.
+
+### MSE
+```{r}
+mse <- mean((df.valid$Target - validation_predictions)^2)
+mse
+
+```
+
+The Mean Squared Error was found to be `r mse`. Lower value indicates better model performance.
+
+## Normality of residuals
+```{r QQ Plot}
+qqnorm(residuals(model1))
+qqline(residuals(model1))
+
+```
+
+The QQ plot checks the normality of the residuals. The straight line indicates that they are normally distributed.
+
+## Normality of residuals
+```{r Shapiro test}
+shapiro.test(residuals(model1))
+```
+
+The Shapiro-Wilk test is performed to formally test the normality of residuals. A significant p-value (typically less than 0.05) would indicate that the residuals are not normally distributed, which could suggest issues with the model.
+
+
