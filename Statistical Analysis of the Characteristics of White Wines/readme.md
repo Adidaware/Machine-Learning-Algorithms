@@ -1,44 +1,34 @@
-White Wine Characteristics & Statistical Analysis
-This project performs an exploratory data analysis (EDA) on a dataset of white wine samples to identify relationships between chemical properties and quality ratings. A custom metric, the Swill Index, is introduced to rank wines based on alcohol, sugar, and quality.
+# White Wine Characteristics & Statistical Analysis
 
-📊 Analysis Objectives
-Data Volume: Processing records for 4,898 white wine variants.
+This project explores a dataset of white wine variants to analyze chemical properties, alcohol content distribution, and the relationship between sugar levels and quality ratings.
 
-Alcohol Distribution: Filtering and identifying high-alcohol content wines ( > 12%).
+## 📊 Project Overview
+The analysis focuses on filtering high-alcohol wines and implementing a custom scoring metric to identify specific wine profiles.
 
-Correlation Filtering: Finding outliers (high alcohol but low quality).
+### Key Objectives:
+* **Data Inspection:** Analyzing attributes for over 4,800 wine samples.
+* **High-Alcohol Filtering:** Identifying wines with alcohol content > 12%.
+* **Quality Analysis:** Isolating wines that maintain high alcohol levels but receive low quality scores.
+* **Feature Engineering:** Implementing the "Swill Index" to rank wines based on their chemical composition.
 
-Feature Engineering: Creating the Swill Index to identify wines with specific high-sugar/high-alcohol profiles.
+## 🧪 The "Swill Index"
+A custom feature was engineered to evaluate the wines, defined by the formula:
 
-🧪 The "Swill Index" Formula
-To identify specific wine profiles, the following calculation was implemented:
+$$Swill = \left( \frac{Alcohol}{Quality} \right) \times Residual\ Sugar$$
 
-Swill=( 
-Quality
-Alcohol
-​	
- )×Residual Sugar
-This index helps highlight wines that have high residual sugar and alcohol relative to their perceived quality.
+This index highlights wines with high residual sugar and alcohol relative to their perceived quality rating.
 
-🛠️ Tools & Dataset
-R Markdown: Used for integrated code and reporting.
+## 🛠️ Technologies & Dataset
+- **Language:** R
+- **Format:** R Markdown (`.Rmd`)
+- **Main Library:** `knitr` (for table rendering)
+- **Data Source:** [White Wine CSV](https://s3.us-east-2.amazonaws.com/artificium.us/datasets/whitewines.csv)
 
-Library: knitr for dynamic table generation.
+## 📁 Repository Contents
+* `white_wine_analysis.Rmd`: The primary source code and analysis.
+* `README.md`: Project documentation and summary.
 
-Dataset: White Wine Quality Dataset (sourced from the UCI Machine Learning Repository).
-
-📂 Repository Structure
-analysis.Rmd: The source code containing the R chunks and logic.
-
-README.md: Project documentation.
-
-whitewines.csv: (External link) The raw data used for the analysis.
-
-🚀 How to Replicate
-Ensure you have R and RStudio installed.
-
-Clone this repo:
-
-Bash
-git clone https://github.com/Adidaware/Machine-Learning-Algorithm.git
-Open the .Rmd file and click Knit. R will automatically fetch the data from the S3 bucket and generate the report.
+## 🚀 Usage
+1. Clone the repository:
+   ```bash
+   git clone [https://github.com/Adidaware/Machine-Learning-Algorithm.git](https://github.com/Adidaware/Machine-Learning-Algorithm.git)
