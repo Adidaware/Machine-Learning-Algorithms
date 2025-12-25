@@ -4,17 +4,14 @@ author: "Daware Aditya"
 date: "January 14, 2025"
 ---
 
-## Question 1
-Create a new project and name the project.
-
-## Question 2
+## Load CSV File
 ```{r Q2_LoadCSV, echo=F}
 url <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/FlightsWithAirlines.csv"
 df.flights <- read.csv(url, stringsAsFactors = FALSE)
 ```
 Load the CSV file from the url.
 
-## Question 3
+## Number of Observations and features
 ```{r Q3, echo=F}
 
 n.row<-nrow(df.flights)
@@ -28,7 +25,7 @@ n.delay<-sum(df.flights$dep_delay > 60)
 
 The dataset contains `r n.row` observations (rows) and `r n.col` columns. Each row is information about a flight, including departure and departure delay information. The average mean departure delay is `r mdelay` minutes.  A total of `r n.delay` flights experienced a delay of more than an hour.
 
-## Question 4
+## Categorization
 ```{r Q4, echo = F}
 
 actual_dephour <- df.flights$dep_hr + (df.flights$dep_min / 60) + (df.flights$dep_delay / 60)
