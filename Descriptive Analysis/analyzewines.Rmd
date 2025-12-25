@@ -1,0 +1,132 @@
+---
+title: "Descriptive Analytics"
+author: "Daware, Aditya"
+date: Spring 25
+---
+
+
+
+```{r LoadCSV, echo=F}
+url<- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/whitewines.csv"
+df.wines <- read.csv(url, stringsAsFactors = F)
+
+```
+
+## Analysis of the Structure of the Data
+```{r Stats, echo= F}
+normality.residual.sugar<- ifelse(shapiro.test(df.wines$residual.sugar)$p.value<0.05, "Yes", "No")
+stats.residualsugar<- c(median(df.wines$residual.sugar), mean(df.wines$residual.sugar, trim=0.1), sd(df.wines$residual.sugar), normality.residual.sugar)
+
+normality.alcohol<- ifelse(shapiro.test(df.wines$alcohol)$p.value<0.05, "Yes", "No")
+stats.alcohol<- c(median(df.wines$alcohol), mean(df.wines$alcohol, trim=0.1), sd(df.wines$alcohol), normality.alcohol)
+
+normality.sulphates<- ifelse(shapiro.test(df.wines$sulphates)$p.value<0.05, "Yes", "No")
+stats.sulphates<- c(median(df.wines$sulphates), mean(df.wines$sulphates, trim=0.1), sd(df.wines$sulphates), normality.sulphates)
+
+normality.quality<- ifelse(shapiro.test(df.wines$quality)$p.value<0.05, "Yes", "No")
+stats.quality<- c(median(df.wines$quality), mean(df.wines$quality, trim=0.1), sd(df.wines$quality), normality.quality)
+
+```
+
+```{r Table, echo=F}
+
+rowname = c("Residual Sugar", "Alcohol", "Sulphates", "Quality")
+colname = c("Median","Trimmed 10% mean", "Standard Deviation", "Normality")
+
+table.stats <- data.frame(
+  Median = c(stats.residualsugar[1], stats.alcohol[1], stats.sulphates[1], stats.quality[1]),
+  TrimmedMean = c(stats.residualsugar[2], stats.alcohol[2], stats.sulphates[2], stats.quality[2]),
+  StdDev = c(stats.residualsugar[3], stats.alcohol[3], stats.sulphates[3], stats.quality[3]),
+  Normality = c(stats.residualsugar[4], stats.alcohol[4], stats.sulphates[4], stats.quality[4]), 
+  row.names = rowname,
+  stringsAsFactors = FALSE
+)
+table.stats
+library(knitr)
+kable(table.stats)
+```
+
+## Correlation Analysis
+
+```{r Correlation, echo=F}
+features <- df.wines[, c("residual.sugar", "alcohol", "sulphates", "quality")]
+
+correlation_matrix <- matrix(0, ncol = 4, nrow = 4)
+
+colnames(correlation_matrix) <- rownames(correlation_matrix) <- colnames(features)
+
+for (i in 1:4) {
+  for (j in 1:4) {
+    correlation_matrix[i, j] <- cor(features[, i], features[, j], method = "spearman")
+  }
+}
+
+correlation_matrix
+```
+
+```{r Correlation, echo=F}
+df.wines$swill.coefficient <- (100 * df.wines$alcohol) / ((df.wines$residual.sugar) * sqrt(df.wines$sulphates))
+
+correlation<-cor(df.wines$quality, df.wines$swill.coefficient, method =  "pearson")
+```
+We define the "swill-coefficient" by the formula below and found that there is a 'little to no positive' correlation between "swill-coefficient" and "quality" (Pearson-Moment coefficient of `r correlation`).
+
+$$\frac{100a}{s \times \sqrt{h}}$$
+
+```{r Scatterplot, echo=F}
+plot(x = df.wines$residual.sugar, 
+     y = df.wines$quality,
+     main = "Scatterplot of Residual Sugar vs Quality",
+     xlab = "Residual Sugar (g/L)",
+     ylab = "Quality (scale)",
+     col = "blue")
+grid()
+
+```
+The scatterplot shows the correlation between the residual sugar and quality of wine. As per the graph, most of the wines have residual sugar in the range of 0 to 15 g/L, and most of the wines lies in the range of 4 to 8 on the quality scale. Wines with high residual sugar do not relate to higher quality wines and the opposite isn't true as well. Wines with same amount of residual sugar have different quality and hence it shows that there is not much correlation between the amount of residual sugar and quality. There is no visible trend, indicating that other parameters play more important role in determining the quality of the wine.
+
+
+## Analysis of Sugar Content
+```{r t.test, echo=F}
+
+mean.below.10<- mean(df.wines$residual.sugar[df.wines$alcohol<10])
+mean.above.10<- mean(df.wines$residual.sugar[df.wines$alcohol>10])
+
+mean.diff<- (mean.below.10 - mean.above.10)
+
+stat.sig <- t.test(
+  df.wines$residual.sugar[df.wines$alcohol >= 10],
+  df.wines$residual.sugar[df.wines$alcohol < 10],
+  alternative = "two.sided"
+)
+result<- ifelse(stat.sig$p.value < 0.05, "The difference is statistically significant", "The difference is not statistically significant")
+
+
+```
+The difference in means is `r mean.diff`. `r result`. A two-sample t-test was conducted to compare the mean residual sugar levels between wines with alcohol content below 10% and those with alcohol content above or equal to 10%. The t-test is justified because T test are used to compare means of 2 groups and determines the statistical significance between the two groups. The data is normally distributed and standard deviation in not known.
+
+## Identification of Outliers
+
+```{r outliers, echo=F}
+
+# formula = 𝑧=𝑥−𝜇/𝜎
+
+z.value.total <- abs((df.wines$total.sulfur.dioxide - mean(df.wines$total.sulfur.dioxide)) / sd(df.wines$total.sulfur.dioxide))
+z.value.chlorides <- abs((df.wines$chlorides - mean(df.wines$chlorides)) / sd(df.wines$chlorides))
+z.value.density <- abs((df.wines$density - mean(df.wines$density)) / sd(df.wines$density))
+
+outliers.total.sulfur <- length(which(z.value.total>2))
+
+outliers.chlorides <- length(which(z.value.chlorides>2))
+
+outliers.density <- length(which(z.value.density>2))
+
+df.outliers <- data.frame(
+  Variable = c("Total Sulfur Dioxide", "Chlorides", "Density"),
+  Outliers = c(outliers.total.sulfur, outliers.chlorides, outliers.density),
+  stringsAsFactors = FALSE
+)
+kable(df.outliers, caption = "Number of Outliers Detected")
+```
+
+
