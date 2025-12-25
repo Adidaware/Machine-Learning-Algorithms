@@ -1,0 +1,122 @@
+---
+title: "Naive Bayes"
+author: "Daware, Aditya"
+date: "Spring 2025"
+---
+
+## Load CSV
+```{r Loading CSV file}
+url <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/HouseVotes-1984-ButOne.csv"
+df  <- read.csv(url, stringsAsFactors = F)
+```
+
+
+## Display head
+```{r Display data}
+head(df,5)
+```
+
+
+## Spliting dataset
+```{r Training Data}
+training.size <- 350
+
+generate.samples <- function(n, data, training.size) {
+  lapply(1:n, function(i) {
+    train.indices <- sample(nrow(data), training.size)
+    list(train = data[train.indices, ], validation = data[-train.indices, ])
+  })
+}
+
+samples <- generate.samples(5, df, training.size)
+
+training.data <- lapply(samples, `[[`, "train")
+validation.data <- lapply(samples, `[[`, "validation")
+```
+
+
+## Naive Bayes model
+```{r Naive Bayes}
+library(e1071)
+
+# Initialize an empty list to store the Naive Bayes models
+nb_models <- list()
+
+# Iterate over each training dataset in training_data
+for (i in 1:length(training.data)) {
+  # Train a Naive Bayes classifier using the first column as the response (party)
+  nb_models[[i]] <- naiveBayes(as.factor(training.data[[i]][, 1]) ~ ., 
+                               data = training.data[[i]])
+}
+
+```
+
+
+## Ensemble prediction
+```{r Ensemble Prediciton}
+library(dplyr)
+
+predict_party <- function(models, new_cases) {
+  predictions <- sapply(models, function(model) {
+    as.character(predict(model, newdata = new_cases))
+  })
+  
+  if(is.vector(predictions)){
+    return(names(which.max(table(predictions))))
+  }else{
+    return(apply(predictions,1,function(row){
+      names(which.max(table(row)))
+    }))
+  }
+}
+```
+
+## Model Evaluation
+```{r}
+library(caret)
+
+evaluate_model <- function(models, validation_data) {
+  results <- lapply(1:length(models), function(i) {
+    predictions <- predict_party(models, validation_data[[i]][, -1])
+    actuals <- as.factor(validation_data[[i]][, 1])
+    
+    conf_matrix <- confusionMatrix(as.factor(predictions), actuals)
+    accuracy <- conf_matrix$overall["Accuracy"]
+    tpr <- conf_matrix$byClass["Sensitivity"]
+    tnr <- conf_matrix$byClass["Specificity"]
+    
+    data.frame(Accuracy = accuracy, True_Positive_Rate = tpr, True_Negative_Rate = tnr)
+  })
+  
+  return(do.call(rbind, results))
+}
+
+ensemble_results <- evaluate_model(nb_models, validation.data)
+
+overall_accuracy <- data.frame(
+  Accuracy = mean(ensemble_results$Accuracy, na.rm = TRUE),
+  True_Positive_Rate = mean(ensemble_results$True_Positive_Rate, na.rm = TRUE),
+  True_Negative_Rate = mean(ensemble_results$True_Negative_Rate, na.rm = TRUE)
+)
+
+ensemble_results <- rbind(ensemble_results, overall_accuracy)
+rownames(ensemble_results)[nrow(ensemble_results)] <- "Overall Accuracy"
+
+knitr::kable(ensemble_results)
+
+```
+
+## Prediction
+```{r Prediction}
+new_cases <- data.frame(V1 = "n", V2 = "y", V3 = "n", V4 = "n", V5 = "y", V6 = "y", 
+                       V7 = "y", V8 = "n", V9 = "n", V10 = "y", V11 = "n", V12 = "y", 
+                       V13 = "y", V14 = "y", V15 = NA, V16 = "n")
+
+predicted_party <- predict_party(nb_models, new_cases)
+
+predicted_party
+```
+
+
+
+
