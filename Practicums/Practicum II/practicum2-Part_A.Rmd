@@ -1,0 +1,262 @@
+---
+title: "Practicum II / Part A"
+author: "Daware, Aditya"
+date: "Spring, 2025"
+subtitle: Decision Tree & Logistic Regression Classification
+---
+
+## Reading the CSV files
+```{r Read CSV}
+training.url <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/parkinsons-diagnostic-data.csv"
+df <- read.csv(training.url, stringsAsFactors = F)
+
+validation.url <- "https://s3.us-east-2.amazonaws.com/artificium.us/datasets/parkinsons-diagnostic-validation-100.csv"
+df.valid <- read.csv(validation.url, stringsAsFactors = F)
+
+```
+
+The CSV file is read and stored in variables.
+
+## Exploratory Data Analysis
+```{r EDA}
+head(df)
+str(df)
+summary(df)
+```
+
+
+
+## Data preprocessing
+```{r removing features}
+df <- df[, -which(names(df) == "Ethnicity")]
+df <- df[, -which(names(df) == "Gender")]
+```
+The Ethnicity column does not contain any data and hence does not contribute towards the model development.
+The gender column indicates that all are female patients and all the patients have same effect on the variables and have been hence removed.
+
+### Encoding features
+```{r One hot encoding}
+df$EducationLevel <- ifelse(df$EducationLevel == "None", 1,0)
+```
+
+We encode the categorical features to suit our needs for the machine learning algorithm.
+
+### Mising Data
+```{r}
+any(is.na(df))
+missing.value <- which(is.na(df), arr.ind = TRUE)
+missing.value
+```
+Missing Data is found the dataframe.
+Decision Tree can still produce a model since it handles the missing data on its own.
+We later imput the missing data with the mean value. Explaination is provided later.
+
+
+## Data Visualization
+```{r Data Visulaization}
+library(ggplot2)
+# Visualize class distribution
+ggplot(df, aes(x = Age)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Age Distribution", x = "Age", y = "Frequency")
+```
+The data seems to be normally distributed.
+
+## Decision Tree
+### Splitting Data into Training and Validation Sets
+```{r Data spliting}
+library(lattice)
+library(caret)
+
+set.seed(9878)
+trainIndex <- createDataPartition(df$Diagnosis, p = 0.8, list = FALSE)
+trainData <- df[trainIndex, ]
+validData <- df[-trainIndex, ]
+
+prop.table(table(trainData$Diagnosis)) * 100
+prop.table(table(validData$Diagnosis)) * 100
+```
+
+The data is split into traing and test data for training the model. We split the model into a 80:20 split.
+
+### Decision Tree Model
+```{r Model Training}
+library(rpart)
+tree_model <- rpart(Diagnosis ~ ., data = trainData, method = "class", parms = list(split = "gini"), control = rpart.control(maxdepth = 10))
+```
+
+We create the decision tree model.
+
+### Visualizing Decision Tree
+```{r Q6 Visualize }
+library(rpart.plot)
+rpart.plot(tree_model)
+```
+
+Visualization of the decision tree model.
+
+### Model Evaluation on Validation Set
+```{r Model evaluation}
+## Model Evaluation on Validation Set
+library(caret)
+
+trainData$Diagnosis <- as.factor(trainData$Diagnosis)
+validData$Diagnosis <- as.factor(validData$Diagnosis)
+
+pred <- predict(tree_model, validData, type = "class")
+pred <- as.factor(pred)
+
+pred <- factor(pred, levels = levels(validData$Diagnosis))
+
+conf_matrix <- confusionMatrix(pred, validData$Diagnosis)
+conf_matrix
+
+```
+
+Model evaluation of the decision tree model
+
+## Random Forest
+### Ditribution of data
+```{r Distribution of Data}
+z <-missing.value[1,2]
+qqnorm(df[,z])
+qqline(df[,z])
+grid()
+```
+As seen earlier, the data is normally distributed and the qq plot shows a mean o around 7. So we impute the missing data with the mean value.
+
+### Imputing missing value
+```{r Handling missing values}
+colSums(is.na(trainData))
+
+class(trainData$SleepQuality)
+
+trainData$SleepQuality[is.na(trainData$SleepQuality)] <- mean(trainData$SleepQuality, na.rm = TRUE)
+
+colSums(is.na(trainData))
+
+```
+Since the data is normally distributed, we imoute the missing values with the mean.
+
+### Model Training
+```{r Random Forest model}
+library(randomForest)
+
+set.seed(123)
+
+rf_model <- randomForest(Diagnosis ~ ., data = trainData, ntree = 5, mtry = sqrt(ncol(trainData)-1))
+print(rf_model)
+
+```
+
+We created a model using random forests using randomForest() function from the randomForest package
+
+## Logistic Regression 
+```{r Logistic Model }
+
+trainData$Diagnosis <- as.numeric(as.character(trainData$Diagnosis))
+log_model <- glm(Diagnosis ~ ., data = trainData, family = binomial)
+summary(log_model)
+
+```
+
+We trained a logistic regression model using generalized linear regression function and setting the family as binomial, since the outcome is binary (Yes/No).
+
+## Ensemble Method
+```{r Ensemble model}
+
+f1_score <- function(actual, predicted) {
+  cm <- confusionMatrix(predicted, actual, positive = "1")
+  precision <- cm$byClass["Precision"]
+  recall <- cm$byClass["Recall"]
+  f1 <- 2 * ((precision * recall) / (precision + recall))
+  return(f1)
+}
+
+# Decision Tree Predictions
+pred <- predict(tree_model, trainData, type = "class")
+f1_dt <- f1_score(as.factor(trainData$Diagnosis), pred)
+
+# Random Forest Predictions
+rf_pred <- predict(rf_model, trainData, type = "class")
+rf_pred_prob <- predict(log_model, trainData, type = "response")
+rf_pred_class <- ifelse(rf_pred_prob >= 0.5, 1, 0)
+
+
+# Logistic Regression Predictions
+log_prob <- predict(log_model, trainData, type = "response")
+log_pred <- ifelse(log_prob > 0.5, 1, 0)
+f1_log <- f1_score(as.factor(trainData$Diagnosis), as.factor(log_pred))
+
+cat("Decision Tree F1-Score:", f1_dt, "\n")
+cat("Random Forest F1-Score:", f1_rf, "\n")
+cat("Logistic Regression F1-Score:", f1_log, "\n")
+
+```
+
+We created an Ensemble model to combine the results of the 3 model to maximise the accuracy of the result.
+
+
+```{r Ensemble prediction}
+# Decision Tree Prediction
+valid_dt_pred <- predict(tree_model, validData, type = "class")
+
+# Random Forest Prediction
+valid_rf_pred <- predict(rf_model, validData, type = "class")
+
+# Logistic Regression Prediction
+valid_log_prob <- predict(log_model, validData, type = "response")
+valid_log_pred <- ifelse(valid_log_prob > 0.5, 1, 0)
+
+# Ensemble prediction using majority vote
+valid_predictions <- data.frame(
+  dt = as.numeric(as.character(valid_dt_pred)),
+  rf = as.numeric(as.character(valid_rf_pred)),
+  log = valid_log_pred
+)
+
+ensemble_valid_pred <- apply(valid_predictions, 1, function(x) {
+  if(sum(x) >= 2) {1} else {0}
+})
+
+output <- data.frame(
+  PatientID = validData$PatientID,
+  PredictedDiagnosis = ensemble_valid_pred
+)
+
+output <- output[order(output$PatientID), ] # Sorted by PatientID in ascending order
+head(output)
+
+write.csv(output, file = "DawareA.Predications.csv", row.names = FALSE)
+
+```
+
+
+
+## Ensemble model f1 score
+```{r Ensemble F1 score}
+library(caret)
+
+# Convert predictions and actual values to factors
+ensemble_valid_pred <- factor(ensemble_valid_pred, levels = c(0, 1))
+validData$Diagnosis <- factor(validData$Diagnosis, levels = c(0, 1))
+
+# Compute confusion matrix
+conf_matrix <- confusionMatrix(ensemble_valid_pred, validData$Diagnosis)
+
+# Extract precision and recall
+precision <- conf_matrix$byClass["Precision"]
+precision
+recall <- conf_matrix$byClass["Recall"]
+recall
+
+# Compute F1-score
+f1.score<-function(p,r){
+  score <- (2 * ((p*r)/(p+r)))
+  return(score)
+}
+score <- f1.score(precision,recall)
+
+```
+
+The F1 score of the ensemble model was found to be `r score`.
