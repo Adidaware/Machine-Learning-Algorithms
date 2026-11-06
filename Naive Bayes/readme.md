@@ -1,6 +1,6 @@
 # Congressional Voting Prediction using Naive Bayes Ensemble
 
-This repository implements a probabilistic classification model using the **Naive Bayes** algorithm to predict political party affiliation (Democrat or Republican). The project features a custom-built **Ensemble Method** to aggregate predictions across multiple data subsets.
+This project implements a probabilistic classification model using the **Naive Bayes** algorithm to predict political party affiliation (Democrat or Republican). The project features a custom-built **Ensemble Method** to aggregate predictions across multiple data subsets.
 
 ## 🧠 Machine Learning Approach
 
@@ -38,12 +38,15 @@ The ensemble is evaluated using the `caret` package across all validation subset
     - `knitr`: Professional table rendering.
 - **Dataset:** [1984 House Votes Dataset](https://s3.us-east-2.amazonaws.com/artificium.us/datasets/HouseVotes-1984-ButOne.csv)
 
-## 📁 Repository Contents
-* `naive_bayes_analysis.Rmd`: The full source code and ensemble logic.
-* `README.md`: Project documentation.
+## 📁 Files
+* `naivebayes.Rmd`: R Markdown source with the full analysis.
+* `naivebayes.html`: rendered report (code, output and plots).
 
 ## 🚀 How to Run
-1. Clone the repository.
-2. Install the necessary R packages:
+1. Install the required packages in R:
    ```r
-   install.packages(c("e1071", "caret", "dplyr", "gmodels"))
+   install.packages(c("e1071", "caret", "dplyr"))
+   ```
+2. Open `naivebayes.Rmd` in RStudio and click **Knit** to build the report. The dataset is read directly from its URL, so no download is needed.
+
+[← Back to all projects](../README.md)

@@ -1,12 +1,11 @@
 ---
-title: "Practicum I / Part B"
+title: "Water Usage Forecasting"
 author: "Daware, Aditya"
 date: "Spring 25"
 output:
   pdf_document: default
   html_document:
     df_print: paged
-subtitle: Forecasting
 ---
 
 

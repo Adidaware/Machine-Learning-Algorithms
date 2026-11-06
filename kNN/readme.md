@@ -35,12 +35,14 @@ The model's performance was analyzed using a Confusion Matrix via the `gmodels` 
     - `gmodels`: Detailed cross-tabulation and model evaluation.
 - **Dataset:** [Diabetes Dataset with Missing Values](https://s3.us-east-2.amazonaws.com/artificium.us/datasets/DiabetesDatasetWithMissingValues.csv)
 
-## 📁 Repository Contents
-* `knn_analysis.Rmd`: The full source code and analysis.
-* `README.md`: Project documentation.
+## 📁 Files
+* `kNN.Rmd`: R Markdown source with the full analysis.
 
-## 🚀 Usage
-1. Clone the repository.
-2. Install the required libraries in R:
+## 🚀 How to Run
+1. Install the required packages in R:
    ```r
-   install.packages(c("class", "caret", "dplyr", "gmodels"))
+   install.packages(c("class", "caret", "dplyr", "ggplot2", "gmodels"))
+   ```
+2. Open `kNN.Rmd` in RStudio and click **Knit** to build the report. The dataset is read directly from its URL, so no download is needed.
+
+[← Back to all projects](../README.md)

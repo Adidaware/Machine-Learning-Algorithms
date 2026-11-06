@@ -33,15 +33,14 @@ The project accounts for cyclical patterns by dividing the fiscal year into thre
     - `stats`: Linear modeling (`lm`).
 - **Data Source:** [Financial Portfolio Dataset](https://s3.us-east-2.amazonaws.com/artificium.us/datasets/financial_portfolio_data.csv)
 
-## 📁 Repository Contents
-* `forecasting_analysis.Rmd`: The source R Markdown file.
-* `README.md`: Documentation and project summary.
+## 📁 Files
+* `Forecasting.Rmd`: R Markdown source with the full analysis.
 
-## 🚀 Usage
-1. Clone the repository.
-2. Install required packages: `install.packages(c("sqldf", "TTR", "RSQLite"))`.
-3. Open `forecasting_analysis.Rmd` in RStudio.
-4. **Knit** the file to generate the report and view the price trend visualizations.
+## 🚀 How to Run
+1. Install the required packages in R:
+   ```r
+   install.packages(c("sqldf", "TTR", "RSQLite"))
+   ```
+2. Open `Forecasting.Rmd` in RStudio and click **Knit** to build the report. The dataset is read directly from its URL, so no download is needed.
 
----
-**Author:** Daware Aditya 
+[← Back to all projects](../README.md)

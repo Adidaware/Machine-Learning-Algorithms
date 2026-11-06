@@ -24,11 +24,14 @@ This index highlights wines with high residual sugar and alcohol relative to the
 - **Main Library:** `knitr` (for table rendering)
 - **Data Source:** [White Wine CSV](https://s3.us-east-2.amazonaws.com/artificium.us/datasets/whitewines.csv)
 
-## 📁 Repository Contents
-* `white_wine_analysis.Rmd`: The primary source code and analysis.
-* `README.md`: Project documentation and summary.
+## 📁 Files
+* `DFinR.Rmd`: R Markdown source with the full analysis.
 
-## 🚀 Usage
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/Adidaware/Machine-Learning-Algorithm.git](https://github.com/Adidaware/Machine-Learning-Algorithm.git)
+## 🚀 How to Run
+1. Install the required packages in R:
+   ```r
+   install.packages(c("knitr"))
+   ```
+2. Open `DFinR.Rmd` in RStudio and click **Knit** to build the report. The dataset is read directly from its URL, so no download is needed.
+
+[← Back to all projects](../README.md)

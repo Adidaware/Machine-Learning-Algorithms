@@ -20,7 +20,14 @@ Based on the analysis, the following insights were derived:
 * **Average Delay:** Rounding to the nearest minute.
 * **Night Flight Threshold:** Flights departing between 7:00 PM and 5:00 AM.
 
+## 📁 Files
+* `Initial.Rmd`: R Markdown source with the full analysis.
+
 ## 🚀 How to Run
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/Adidaware/Machine-Learning-Algorithm.git](https://github.com/Adidaware/Machine-Learning-Algorithm.git)
+1. Install the required packages in R:
+   ```r
+   install.packages(c("knitr"))
+   ```
+2. Open `Initial.Rmd` in RStudio and click **Knit** to build the report. The dataset is read directly from its URL, so no download is needed.
+
+[← Back to all projects](../README.md)

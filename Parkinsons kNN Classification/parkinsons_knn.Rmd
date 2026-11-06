@@ -1,9 +1,8 @@
 ---
-title: "Practicum I / Part A"
+title: "Parkinson's Disease Classification with kNN"
 author: "Daware, Aditya"
 date: "Spring 2025"
 output: pdf_document
-subtitle: kNN Classification
 ---
 
 ## Loading the CSV file
@@ -243,7 +242,7 @@ f1.score(precision,recall)
 The f1 score obtained for this model is `r f1.score(precision,recall)`. The f1 score is fluctuation as the data spliting for the KNN model training is occurring at random, the range of F1 score is 0.75 to 0.9.
 
 
-# Part B - Validating the model
+# Validating the model on new data
 ## Loading the CSV file 
 ```{r LoadCSVfile}
 

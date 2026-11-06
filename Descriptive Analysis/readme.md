@@ -1,6 +1,6 @@
 # Descriptive Analytics & Statistical Inference (White Wine Dataset)
 
-This repository contains a rigorous statistical analysis of white wine characteristics, focusing on distribution normality, correlation analysis, and hypothesis testing to validate chemical relationships.
+This project contains a rigorous statistical analysis of white wine characteristics, focusing on distribution normality, correlation analysis, and hypothesis testing to validate chemical relationships.
 
 ## 📊 Key Analytical Components
 
@@ -31,15 +31,14 @@ Used **Z-score Analysis** to identify data points located more than 2 standard d
 - **Tools:** R Markdown, `knitr`
 - **Statistical Methods:** Shapiro-Wilk Test, Spearman/Pearson Correlation, Two-sample T-test, Z-score Outlier Detection.
 
-## 📁 Repository Files
-* `descriptive_analytics.Rmd`: The complete source code and mathematical logic.
-* `README.md`: Project summary and documentation.
+## 📁 Files
+* `analyzewines.Rmd`: R Markdown source with the full analysis.
 
-## 🚀 How to Use
-1. Clone the repository.
-2. Ensure you have the `knitr` library installed in R.
-3. Knit the `.Rmd` file to view the comprehensive report including the correlation matrix and scatterplot visualizations.
+## 🚀 How to Run
+1. Install the required packages in R:
+   ```r
+   install.packages(c("knitr"))
+   ```
+2. Open `analyzewines.Rmd` in RStudio and click **Knit** to build the report. The dataset is read directly from its URL, so no download is needed.
 
----
-**Author:** Daware Aditya   
-
+[← Back to all projects](../README.md)
